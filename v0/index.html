@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather API App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #6B8CEF, #9B6BEF);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+            font-size: 1.8rem;
+        }
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #6B8CEF;
+        }
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #6B8CEF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        button:hover {
+            background-color: #5A7BE0;
+        }
+        #weather-display {
+            margin-top: 1.5rem;
+        }
+        .weather-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .temperature {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+            color: #2c3e50;
+        }
+        .condition {
+            text-transform: capitalize;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            color: #666;
+        }
+        .details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+            text-align: left;
+        }
+        .detail-item {
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .detail-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+        .detail-value {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .error {
+            color: #e74c3c;
+            padding: 1rem;
+            background-color: #fdf0f0;
+            border-radius: 8px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .api-key-container {
+            margin-bottom: 1rem;
+        }
+        #save-api-key {
+            background-color: #2ecc71;
+        }
+        #save-api-key:hover {
+            background-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather Forecast</h1>
+        <div class="api-key-container">
+            <input type="text" id="api-key-input" placeholder="Enter your WeatherAPI.com API key" aria-label="Enter your WeatherAPI.com API key">
+            <button id="save-api-key" onclick="saveApiKey()">Save API Key</button>
+        </div>
+        <input type="text" id="location-input" placeholder="Enter city name" aria-label="Enter city name">
+        <button onclick="fetchWeather()">Get Weather</button>
+        <div id="weather-display"></div>
+    </div>
+
+    <script>
+        const apiKeyInput = document.getElementById("api-key-input");
+        const locationInput = document.getElementById("location-input");
+        const weatherDisplay = document.getElementById("weather-display");
+
+        // Load API key from local storage if available
+        window.onload = function() {
+            const savedApiKey = localStorage.getItem('weatherApiKey');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
+            }
+        }
+
+        function saveApiKey() {
+            const apiKey = apiKeyInput.value.trim();
+            if (apiKey) {
+                localStorage.setItem('weatherApiKey', apiKey);
+                alert('API key saved successfully!');
+            } else {
+                alert('Please enter a valid API key.');
+            }
+        }
+
+        async function fetchWeather() {
+            const apiKey = apiKeyInput.value.trim();
+            const location = locationInput.value.trim();
+
+            if (!apiKey) {
+                weatherDisplay.innerHTML = '<p class="error">Please enter your WeatherAPI.com API key.</p>';
+                return;
+            }
+
+            if (!location) {
+                weatherDisplay.innerHTML = '<p class="error">Please enter a city name.</p>';
+                return;
+            }
+
+            weatherDisplay.innerHTML = '<p class="loading">Loading weather data...</p>';
+
+            const apiUrl = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${encodeURIComponent(location)}&aqi=yes`;
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const { location: loc, current } = data;
+                    
+                    weatherDisplay.innerHTML = `
+                        <div class="weather-card">
+                            <h2>${loc.name}, ${loc.country}</h2>
+                            <img src="${current.condition.icon}" alt="${current.condition.text}" width="64" height="64">
+                            <div class="temperature">${current.temp_c}°C</div>
+                            <div class="condition">${current.condition.text}</div>
+                            <div class="details">
+                                <div class="detail-item">
+                                    <div class="detail-label">Feels Like</div>
+                                    <div class="detail-value">${current.feelslike_c}°C</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Humidity</div>
+                                    <div class="detail-value">${current.humidity}%</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Wind</div>
+                                    <div class="detail-value">${current.wind_kph} km/h</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">UV Index</div>
+                                    <div class="detail-value">${current.uv}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    weatherDisplay.innerHTML = `<p class="error">${data.error.message || 'Failed to fetch weather data. Please check the city name and try again.'}</p>`;
+                }
+            } catch (error) {
+                weatherDisplay.innerHTML = `<p class="error">Error fetching weather data: ${error.message}</p>`;
+            }
+        }
+
+        // Add event listener for Enter key press
+        locationInput.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                fetchWeather();
+            }
+        });
+    </script>
+</body>
+</html>
